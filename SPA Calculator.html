@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora con Compensación</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --panel-bg: #161616;
+            --text-main: #e0e0e0;
+            --accent-green: #00ff41;
+            --border-color: #333;
+        }
+
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+
+        .container { background-color: var(--panel-bg); padding: 30px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; max-width: 350px; text-align: center; }
+
+        h2 { font-size: 1.1rem; text-transform: uppercase; margin-bottom: 20px; }
+
+        .input-group { margin: 15px 0; }
+        
+        label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 5px; }
+
+        input { width: 80%; padding: 8px; background-color: #000; border: 1px solid var(--accent-green); color: var(--accent-green); font-size: 1.2rem; text-align: center; border-radius: 4px; outline: none; }
+
+        button { width: 86%; padding: 10px; margin-top: 15px; background-color: var(--accent-green); color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+
+        .result-display { margin: 20px 0; font-size: 2rem; font-weight: bold; color: var(--accent-green); }
+        
+        .history-section { margin-top: 20px; border-top: 1px solid #222; padding-top: 10px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Calculadora con Comp.</h2>
+        
+        <div class="input-group">
+            <label>Distancia (Metros)</label>
+            <input type="number" id="mInput" placeholder="Ej: 350">
+        </div>
+        
+        <div class="input-group">
+            <label>Compensación (MIL +/-)</label>
+            <input type="number" id="compInput" value="0" step="0.1" placeholder="0">
+        </div>
+
+        <button onclick="calcular()">Calcular Ajuste</button>
+
+        <div class="result-display" id="resultDisplay">-- MIL</div>
+
+        <div class="history-section">
+            <ul id="history-list" style="list-style:none; padding:0;"></ul>
+        </div>
+    </div>
+
+    <script>
+        const scaleData = [
+            { m: 200, mil: 100 }, { m: 220, mil: 117 }, { m: 240, mil: 135 },
+            { m: 260, mil: 153 }, { m: 280, mil: 171 }, { m: 300, mil: 188 },
+            { m: 320, mil: 206 }, { m: 340, mil: 224 }, { m: 360, mil: 242 },
+            { m: 380, mil: 260 }, { m: 400, mil: 277 }, { m: 420, mil: 295 },
+            { m: 440, mil: 313 }, { m: 460, mil: 331 }, { m: 480, mil: 348 }, 
+            { m: 500, mil: 366 }
+        ];
+
+        let history = [];
+
+        function interpolate(m, p1, p2) {
+            const slope = (p2.mil - p1.mil) / (p2.m - p1.m);
+            return p1.mil + (m - p1.m) * slope;
+        }
+
+        function calcular() {
+            const m = parseFloat(document.getElementById('mInput').value);
+            const comp = parseFloat(document.getElementById('compInput').value || 0);
+
+            if (isNaN(m)) return alert("Ingresa una distancia");
+
+            // 1. Encontrar MIL base
+            let baseMil = 0;
+            if (m <= scaleData[0].m) baseMil = interpolate(m, scaleData[0], scaleData[1]);
+            else if (m >= scaleData[scaleData.length-1].m) baseMil = interpolate(m, scaleData[scaleData.length-2], scaleData[scaleData.length-1]);
+            else {
+                for (let i = 0; i < scaleData.length - 1; i++) {
+                    if (m >= scaleData[i].m && m <= scaleData[i+1].m) {
+                        baseMil = interpolate(m, scaleData[i], scaleData[i+1]);
+                        break;
+                    }
+                }
+            }
+
+            // 2. Aplicar compensación
+            const finalMil = (baseMil + (comp * -1) - 15).toFixed(1);
+
+            console.log(baseMil)
+            console.log(comp)
+            console.log(finalMil)
+
+            document.getElementById('resultDisplay').innerText = `${finalMil} MIL`;
+
+            // 3. Historial
+            history.unshift(`${m}m + ${comp} = ${finalMil} MIL`);
+            if (history.length > 10) history.pop();
+            document.getElementById('history-list').innerHTML = history.map(h => `<li>${h}</li>`).join('');
+        }
+    </script>
+</body>
+</html>
