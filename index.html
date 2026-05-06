@@ -23,7 +23,7 @@
 
         /* Toggle */
         .toggle-wrapper { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 14px; }
-        .toggle-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.2s; }
+        .toggle-label { font-size: 1.6rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.2s; line-height: 1; }
         .toggle-label.active { color: var(--accent-green); font-weight: bold; }
         .switch { position: relative; display: inline-block; width: 48px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
@@ -98,12 +98,12 @@
     <h2>Calculadora SPA</h2>
 
     <div class="toggle-wrapper">
-        <span class="toggle-label active" id="label-a">Alemania</span>
+        <span class="toggle-label active" id="label-a">🇩🇪</span>
         <label class="switch">
             <input type="checkbox" id="scaleToggle" onchange="onToggle()">
             <span class="slider"></span>
         </label>
-        <span class="toggle-label" id="label-b">USA</span>
+        <span class="toggle-label" id="label-b">🇺🇸</span>
     </div>
 
     <div class="fields-row">
@@ -164,6 +164,7 @@
     let useScaleB = false;
     let focusedField = 'm';
     let values = { m: '', comp: '0' };
+    let compFresh = false; // true = next digit clears comp number but keeps sign
 
     function setFocus(field) {
         focusedField = field;
@@ -178,6 +179,24 @@
 
     function pad(key) {
         let v = values[focusedField];
+
+        // If comp is "fresh" (just after a calc), first digit clears number but keeps sign
+        if (compFresh && focusedField === 'comp') {
+            if (key === 'C' || key === 'bk') {
+                compFresh = false;
+            } else if (key === '+/-') {
+                values[focusedField] = v.startsWith('-') ? v.slice(1) : '-' + v;
+                updateDisplays();
+                return;
+            } else if (key !== '.') {
+                const sign = v.startsWith('-') ? '-' : '';
+                values[focusedField] = sign + key;
+                compFresh = false;
+                updateDisplays();
+                return;
+            }
+            compFresh = false;
+        }
 
         if (key === 'C') {
             values[focusedField] = focusedField === 'comp' ? '0' : '';
@@ -197,7 +216,6 @@
 
         updateDisplays();
 
-        // Auto-focus comp after 3 digits in distance field
         if (focusedField === 'm' && values.m.replace('-', '').length === 3) {
             setFocus('comp');
         }
@@ -243,9 +261,9 @@
         if (history.length > 10) history.pop();
         document.getElementById('history-list').innerHTML = history.map(h => `<li>${h}</li>`).join('');
 
-        // Reset for next shot
+        // Reset for next shot: clear distance, keep comp sign, mark fresh
         values.m = '';
-        values.comp = '0';
+        compFresh = true;
         updateDisplays();
         setFocus('m');
     }
